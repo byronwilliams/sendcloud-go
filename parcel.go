@@ -2,7 +2,13 @@ package sendcloud
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
+)
+
+var (
+	ErrAddressMissingState = errors.New("address is missing state")
+	ErrHouseNumberRequired = errors.New("house number is required")
 )
 
 type LabelData []byte
@@ -18,25 +24,33 @@ const (
 )
 
 type ParcelParams struct {
-	Name             string
-	CompanyName      string
-	Street           string
-	HouseNumber      string
-	City             string
-	PostalCode       string
-	State            string
+	Name        string
+	CompanyName string
+	// Address of the recipient
+	Address string
+	// Additional address information, e.g. 2nd level
+	Address2 *string
+	// House number of the recipient (required if CountryCode is US)
+	HouseNumber *string
+	// City of the recipient
+	City string
+	// Zip code of the recipient
+	PostalCode string
+	// Code of the state (e.g. NY for New York) or province (e.g. RM for Rome).
+	// Destinations that require this field are USA, Canada and Italy.
+	State *string
+	// Country of the recipient (e.g. GB, US, SE)
 	CountryCode      string
-	AdditionalInfo   string
 	IsLabelRequested bool
 	Method           int64
-	EmailAddress     string
-	PhoneNumber      string
+	EmailAddress     *string
+	PhoneNumber      *string
 	ExternalID       string
 	ToServicePointID int64
 	Weight           string
 	OrderNumber      string
 	SenderID         int64
-	Items            []CreateParcelItemRequest
+	Items            *[]CreateParcelItemRequest
 	// The currency of the total order value. Validated against a format of
 	// “XYZ” (ISO 4217).
 	TotalOrderValueCurrency *string
@@ -52,6 +66,18 @@ type ParcelParams struct {
 	CustomsShipmentType *CustomsShipmentType
 	// When set to true configured shipping rules will be applied before creating the label and announcing the Parcel
 	ApplyShippingRules *bool
+}
+
+func ValidatePayload(params ParcelParams) error {
+	if isStateRequired(params.CountryCode) && params.State == nil {
+		return ErrAddressMissingState
+	}
+
+	if params.CountryCode == "US" && params.HouseNumber == nil {
+		return ErrHouseNumberRequired
+	}
+
+	return nil
 }
 
 type CreateParcelItemRequest struct {
@@ -113,31 +139,33 @@ type ParcelRequestContainer struct {
 }
 
 type ParcelRequest struct {
-	Name                       string                       `json:"name"`
-	CompanyName                string                       `json:"company_name"`
-	Address                    string                       `json:"address"`
-	Address2                   string                       `json:"address_2"`
-	HouseNumber                string                       `json:"house_number"`
-	City                       string                       `json:"city"`
-	PostalCode                 string                       `json:"postal_code"`
-	CountryState               string                       `json:"country_state"`
-	Country                    string                       `json:"country"`
-	Weight                     string                       `json:"weight,omitempty"`
-	Telephone                  string                       `json:"telephone"`
-	Email                      string                       `json:"email"`
-	RequestLabel               bool                         `json:"request_label"`
-	ToServicePointID           *int64                       `json:"to_service_point,omitempty"`
-	OrderNumber                string                       `json:"order_number"`
-	ExternalID                 *string                      `json:"external_reference,omitempty"`
-	SenderID                   *int64                       `json:"sender_address,omitempty"`
-	Shipment                   *CreateParcelShipmentRequest `json:"shipment,omitempty"`
-	Items                      []CreateParcelItemRequest    `json:"parcel_items,omitempty"`
-	TotalOrderValueCurrency    *string                      `json:"total_order_value_currency,omitempty"`
-	TotalOrderValue            *string                      `json:"total_order_value,omitempty"`
-	ShippingMethodCheckoutName *string                      `json:"shipping_method_checkout_name,omitempty"`
-	CustomsInvoiceNr           *string                      `json:"customs_invoice_nr,omitempty"`
-	CustomsShipmentType        *CustomsShipmentType         `json:"customs_shipment_type,omitempty"`
-	ApplyShippingRules         *bool                        `json:"apply_shipping_rules,omitempty"`
+	Name             string                       `json:"name"`
+	CompanyName      string                       `json:"company_name"`
+	Address          string                       `json:"address"`
+	Address2         *string                      `json:"address_2,omitempty"`
+	HouseNumber      *string                      `json:"house_number,omitempty"`
+	City             string                       `json:"city"`
+	PostalCode       string                       `json:"postal_code"`
+	CountryState     *string                      `json:"country_state,omitempty"`
+	Country          string                       `json:"country"`
+	Weight           string                       `json:"weight,omitempty"`
+	Telephone        *string                      `json:"telephone,omitempty"`
+	Email            *string                      `json:"email,omitempty"`
+	RequestLabel     bool                         `json:"request_label"`
+	ToServicePointID *int64                       `json:"to_service_point,omitempty"`
+	OrderNumber      string                       `json:"order_number"`
+	ExternalID       *string                      `json:"external_reference,omitempty"`
+	SenderID         *int64                       `json:"sender_address,omitempty"`
+	Shipment         *CreateParcelShipmentRequest `json:"shipment,omitempty"`
+
+	Items *[]CreateParcelItemRequest `json:"parcel_items,omitempty"`
+
+	TotalOrderValueCurrency    *string              `json:"total_order_value_currency,omitempty"`
+	TotalOrderValue            *string              `json:"total_order_value,omitempty"`
+	ShippingMethodCheckoutName *string              `json:"shipping_method_checkout_name,omitempty"`
+	CustomsInvoiceNr           *string              `json:"customs_invoice_nr,omitempty"`
+	CustomsShipmentType        *CustomsShipmentType `json:"customs_shipment_type,omitempty"`
+	ApplyShippingRules         *bool                `json:"apply_shipping_rules,omitempty"`
 }
 
 type LabelResponseContainer struct {
@@ -220,8 +248,8 @@ func (p *ParcelParams) GetPayload() interface{} {
 	parcel := ParcelRequest{
 		Name:                       p.Name,
 		CompanyName:                p.CompanyName,
-		Address:                    p.Street,
-		Address2:                   p.AdditionalInfo,
+		Address:                    p.Address,
+		Address2:                   p.Address2,
 		HouseNumber:                p.HouseNumber,
 		City:                       p.City,
 		PostalCode:                 p.PostalCode,
@@ -347,4 +375,13 @@ const (
 type Document struct {
 	Format DocumentFormat
 	Body   []byte
+}
+
+func isStateRequired(countryCode string) bool {
+	switch countryCode {
+	case "US", "CA", "IT":
+		return true
+	}
+
+	return false
 }
