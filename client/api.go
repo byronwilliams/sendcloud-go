@@ -9,6 +9,7 @@ import (
 	"github.com/afosto/sendcloud-go/returns"
 	"github.com/afosto/sendcloud-go/sender"
 	"github.com/afosto/sendcloud-go/servicepoint"
+	"github.com/afosto/sendcloud-go/tracking"
 )
 
 type API struct {
@@ -17,6 +18,7 @@ type API struct {
 	Sender       *sender.Client
 	ServicePoint *servicepoint.Client
 	Integration  *integration.Client
+	Tracking     *tracking.Client
 	Return       *returns.Client
 	Product      *products.Client
 	Option       *option.Client
@@ -29,6 +31,7 @@ func (a *API) Init(apiKey string, apiSecret string) {
 	a.Sender = sender.New(apiKey, apiSecret)
 	a.ServicePoint = servicepoint.New(apiKey, apiSecret)
 	a.Integration = integration.New(apiKey, apiSecret)
+	a.Tracking = tracking.New(apiKey, apiSecret)
 	a.Return = returns.New(apiKey, apiSecret)
 	a.Product = products.New(apiKey, apiSecret)
 	a.Option = option.New(apiKey, apiSecret)
