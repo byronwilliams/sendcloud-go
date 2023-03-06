@@ -6,6 +6,7 @@ import (
 	"github.com/afosto/sendcloud-go/parcel"
 	"github.com/afosto/sendcloud-go/sender"
 	"github.com/afosto/sendcloud-go/servicepoint"
+	"github.com/afosto/sendcloud-go/tracking"
 )
 
 type API struct {
@@ -14,13 +15,15 @@ type API struct {
 	Sender       *sender.Client
 	ServicePoint *servicepoint.Client
 	Integration  *integration.Client
+	Tracking     *tracking.Client
 }
 
-//Initialize the client
+// Initialize the client
 func (a *API) Init(apiKey string, apiSecret string) {
 	a.Parcel = parcel.New(apiKey, apiSecret)
 	a.Method = method.New(apiKey, apiSecret)
 	a.Sender = sender.New(apiKey, apiSecret)
 	a.ServicePoint = servicepoint.New(apiKey, apiSecret)
 	a.Integration = integration.New(apiKey, apiSecret)
+	a.Tracking = tracking.New(apiKey, apiSecret)
 }
