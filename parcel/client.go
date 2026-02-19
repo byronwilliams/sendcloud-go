@@ -7,11 +7,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	sendcloud "github.com/afosto/sendcloud-go"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
+
+	sendcloud "github.com/afosto/sendcloud-go"
 )
 
 type Client struct {
@@ -110,7 +111,7 @@ func (c *Client) GetDocument(ctx context.Context, parcelID int64, docTyp string,
 	doc := sendcloud.Document{
 		Format: sendcloud.DocumentFormat(response.Header.Get("content-type")),
 	}
-	if doc.Body, err = ioutil.ReadAll(response.Body); err != nil {
+	if doc.Body, err = io.ReadAll(response.Body); err != nil {
 		return nil, err
 	}
 	return &doc, nil

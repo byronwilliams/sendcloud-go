@@ -86,7 +86,7 @@ type Parcel struct {
 	CompanyName    string      `json:"company_name"`
 	Email          string      `json:"email"`
 	Street         string      `json:"street"`
-	HouseNumber    string      `json:"house_number"`
+	HouseNumber    int         `json:"house_number"`
 	Address        string      `json:"address"`
 	Address2       string      `json:"address_2"`
 	City           string      `json:"city"`
@@ -202,7 +202,7 @@ type Carrier struct {
 
 type AddressDivided struct {
 	Street      string `json:"street"`
-	HouseNumber string `json:"house_number"`
+	HouseNumber int    `json:"house_number"`
 }
 
 type Shipment struct {
